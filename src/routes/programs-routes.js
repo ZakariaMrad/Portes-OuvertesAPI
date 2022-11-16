@@ -8,12 +8,36 @@ class programsRoutes {
 
     constructor() {
         connection
-        //router.get('/:code', this.getOne); //
+        router.get('/:code', this.getOne); //
         router.get('/', this.getAll); //
     }
 
     getOne(req, res, next) {
+        try {
 
+            connection.query(`SELECT PG.Id as PGId, PG.Title as PGTitle, PG.Description as PGDescription, PG.Propos as PGPropos, 
+            SS.Id as SSId,SS.Title as SSTitle, SS.OrderOf as SSOrderOf, CS.Title as CSTitle, CS.Content as CSContent
+            FROM Programs PG
+            INNER JOIN Sessions SS ON PG.Id = SS.IdPrograms
+            INNER JOIN SessionsCourses SC ON SS.Id = SC.IdSessions
+            INNER JOIN Courses CS ON SC.IdCourses = CS.Id
+            WHERE PG.Id = ${req.params.code}`,
+                function (error, results, fields) {
+                    if (error || results.length == 0) {
+                        res.status(404).end();
+                        return
+                    }
+
+                    let p = new Program(results[0]);
+
+                    results.slice(1).forEach(r => {
+                        p.TryInitialise(r)
+                    });
+                    res.json(p).status(200);
+                })
+        } catch (error) {
+            next(error);
+        }
     }
     async getAll(req, res, next) {
         let programs = [];
